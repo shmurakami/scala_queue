@@ -7,11 +7,14 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.io.StdIn
+import scala.util.Random
 
 object ProviderServer {
   implicit val system: ActorSystem = ActorSystem("queue-provider")
@@ -70,6 +73,30 @@ object ProviderServer {
       .flatMap(_.unbind())
       .onComplete(_ => system.terminate())
 
+  }
+
+  def streaming(): Unit = {
+    val numbers = Source.fromIterator(() =>
+      Iterator.continually(Random.nextInt()))
+
+    val route =
+      path("random") {
+        get {
+          complete(
+            HttpEntity(
+              ContentTypes.`text/plain(UTF-8)`,
+              numbers.map(n => ByteString(s"$n\n"))
+            )
+          )
+        }
+      }
+
+    val bindingFuture = Http().bindAndHandle(route, "localhost", 10082)
+    println(s"running http://localhost:10082")
+    StdIn.readLine()
+    bindingFuture
+      .flatMap(_.unbind())
+      .onComplete(_ => system.terminate())
   }
 
 }
