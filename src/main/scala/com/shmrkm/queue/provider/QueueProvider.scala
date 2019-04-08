@@ -4,6 +4,7 @@ object QueueProvider {
   def main(args: Array[String]): Unit = {
 //    ProviderServer.run()
 //    ProviderServer.streaming()
-    ProviderServer.actor()
+//    ProviderServer.actor()
+    ProviderServer.flow()
   }
 }

@@ -8,6 +8,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.HttpMethods._
 import akka.stream.scaladsl.Source
 import akka.util.{ByteString, Timeout}
 import spray.json.DefaultJsonProtocol._
@@ -142,6 +143,34 @@ object ProviderServer {
 
     val bindingFuture = Http().bindAndHandle(route, "localhost", 10082)
     println(s"http server online at http://localhost:10080")
+    StdIn.readLine()
+
+    bindingFuture
+      .flatMap(_.unbind())
+      .onComplete(_ => system.terminate())
+  }
+
+  def flow(): Unit = {
+    val requestHandler: HttpRequest => HttpResponse = {
+      case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
+        HttpResponse(entity = HttpEntity(
+          ContentTypes.`text/html(UTF-8)`,
+          "<html><body><h1>Hello World</h1></body></html>"
+        ))
+
+      case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>
+        HttpResponse(entity = "pong")
+
+      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) =>
+        sys.error("BOMB")
+
+      case r: HttpRequest =>
+        r.discardEntityBytes()
+        HttpResponse(404, entity = "Unknown resource")
+    }
+
+    val bindingFuture = Http().bindAndHandleSync(requestHandler, "localhost", 10083)
+    println(s"http server online at http://localhost:10083")
     StdIn.readLine()
 
     bindingFuture
