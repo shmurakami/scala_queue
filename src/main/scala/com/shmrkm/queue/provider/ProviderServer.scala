@@ -1,18 +1,20 @@
 package com.shmrkm.queue.provider
 
 import akka.Done
-import akka.actor.ActorSystem
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
+import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import akka.util.{ByteString, Timeout}
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.util.Random
 
@@ -91,9 +93,57 @@ object ProviderServer {
         }
       }
 
-    val bindingFuture = Http().bindAndHandle(route, "localhost", 10082)
+    val bindingFuture = Http().bindAndHandle(route, "localhost", 10081)
     println(s"running http://localhost:10082")
     StdIn.readLine()
+    bindingFuture
+      .flatMap(_.unbind())
+      .onComplete(_ => system.terminate())
+  }
+
+  def actor(): Unit = {
+    case class Bid(userId: String, offer: Int)
+    case class Bids(bids: List[Bid])
+    case object GetBids
+
+    class Auction extends Actor with ActorLogging {
+      var bids = List.empty[Bid]
+
+      def receive: Receive = {
+
+        case bid @ Bid(userId, offer) =>
+          bids = bids :+ bid
+          log.info(s"Bid complete $userId, $offer")
+
+        case GetBids => sender() ! Bids(bids)
+        case _ => log.info("Invalid message")
+      }
+    }
+
+    implicit val bidFormat = jsonFormat2(Bid)
+    implicit val bidsFormat = jsonFormat1(Bids)
+
+    val auction = system.actorOf(Props[Auction], "auction")
+
+    val route =
+      path("auction") {
+        put {
+          parameter("bid".as[Int], "user") { (bid, user) =>
+            auction ! Bid(user, bid)
+            complete(StatusCodes.Accepted, "bid placed")
+          }
+        } ~
+        get {
+          implicit val timeout: Timeout = 5.seconds
+          val bids: Future[Bids] = (auction ? GetBids).mapTo[Bids]
+          complete(bids)
+        }
+      }
+
+    val bindingFuture = Http().bindAndHandle(route, "localhost", 10082)
+    println(s"http server online at http://localhost:10080")
+    StdIn.readLine()
+
     bindingFuture
       .flatMap(_.unbind())
       .onComplete(_ => system.terminate())
