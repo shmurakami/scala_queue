@@ -5,6 +5,7 @@ object QueueProvider {
 //    ProviderServer.run()
 //    ProviderServer.streaming()
 //    ProviderServer.actor()
-    ProviderServer.flow()
+//    ProviderServer.flow()
+    ProviderServer()
   }
 }
