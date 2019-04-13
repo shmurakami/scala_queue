@@ -5,7 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server.Directives._
-import com.shmrkm.queue.{KafkaProvider, Queue}
+import com.shmrkm.queue.domain.Queue
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.io.StdIn

@@ -1,5 +1,6 @@
-package com.shmrkm.queue
+package com.shmrkm.queue.provider
 
+import com.shmrkm.queue.domain.Queue
 import com.typesafe.scalalogging.Logger
 
 trait Register {
