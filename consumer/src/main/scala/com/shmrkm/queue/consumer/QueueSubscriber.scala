@@ -1,17 +1,16 @@
 package com.shmrkm.queue.consumer
 
-import com.shmrkm.queue.domain.Queue
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.Success
 
 trait Subscriber {
-  def subscribe: Future[Queue]
+  def subscribe: Future[Success[Boolean]]
 }
 
 class QueueSubscriber extends Subscriber {
 
-  override def subscribe: Future[Queue] = Future {
-    Queue("foobar")
+  override def subscribe: Future[Success[Boolean]] = Future {
+    new Success[Boolean](true)
   }
 }

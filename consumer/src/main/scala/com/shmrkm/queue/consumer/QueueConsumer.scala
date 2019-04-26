@@ -1,14 +1,15 @@
 package com.shmrkm.queue.consumer
 
 import scala.util.{Failure, Success}
+import com.shmrkm.queue.consumer.repository.QueueRepositoryImpl
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 
 object QueueConsumer {
 
   def main(args: Array[String]): Unit = {
-    println("consumer")
-
     /**
       * what consumer does?
       * - subscribe kafka topic
@@ -18,13 +19,25 @@ object QueueConsumer {
       *   - second dynamodb
       */
 
-    // subscribe
     val subscriber = new QueueSubscriber
+    val subscribe = subscriber.subscribe
 
-    subscriber.subscribe.onComplete {
-      case Success(queue) => println(queue.value)
+    subscribe.onComplete {
+      case Success(success) => consume()
       case Failure(exception) => println(exception.getMessage)
     }
+
+    Await.ready(subscribe, Duration.fromNanos(1 * 1000 * 1000))
   }
 
+  def consume(): Unit = {
+    QueueRepositoryImpl.consume().onComplete {
+      case Success(q) => q match {
+        // store to database
+        case Some(queue) => println(queue.value)
+        case None => println("no queue")
+      }
+      case Failure(e) => println(s"failed to fetch ${e.getMessage}")
+    }
+  }
 }
