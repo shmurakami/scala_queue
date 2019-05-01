@@ -19,6 +19,13 @@ lazy val domain = (project in file("domain"))
     name := "queue_domain",
   )
 
+lazy val adapter = (project in file("adapter"))
+  .settings(
+    commonSettings,
+    name := "queue_adapter",
+  )
+  .dependsOn(domain)
+
 lazy val provider = (project in file("provider"))
   .settings(
     commonSettings,
@@ -30,6 +37,7 @@ lazy val provider = (project in file("provider"))
     ),
   )
   .dependsOn(domain)
+  .dependsOn(adapter)
 
 lazy val consumer = (project in file("consumer"))
   .settings(
@@ -37,3 +45,7 @@ lazy val consumer = (project in file("consumer"))
     name := "consumer",
   )
   .dependsOn(domain)
+  .dependsOn(adapter)
+
+lazy val root = (project in file("."))
+  .aggregate(domain, provider, consumer)

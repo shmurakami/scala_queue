@@ -5,14 +5,19 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server.Directives._
+import com.shmrkm.adapter.Request.StoreQueueRequest
 import com.shmrkm.queue.domain.Queue
+import com.shmrkm.adapter.repository._
+import com.shmrkm.adapter.usecase.StoreQueueUseCaseImpl
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 import scala.io.StdIn
 
 final case class SuccessResponse(success: Boolean)
 
-final case class QueueRequest(value: String)
+final case class QueueRequest(value: String) {
+  def queue: Queue = Queue(value)
+}
 
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val success: RootJsonFormat[SuccessResponse] = jsonFormat1(SuccessResponse)
@@ -25,14 +30,21 @@ object ProviderServer extends JsonSupport {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  def apply(): Unit = {
-    val route =
-      put {
-        path("register") {
-          entity(as[QueueRequest]) { queue =>
-            KafkaProvider.register(Queue(queue.value))
+  implicit val queueRepositoryImpl = new QueueRepositoryImpl
 
-            complete(SuccessResponse(true))
+  def apply(): Unit = {
+
+    val route =
+      post {
+        path("queue") {
+          entity(as[QueueRequest]) { request =>
+            val useCase = new StoreQueueUseCaseImpl()
+            if (useCase.execute(StoreQueueRequest(request.queue))) {
+              complete(SuccessResponse(true))
+            } else {
+              complete(SuccessResponse(false))
+            }
+//            KafkaProvider.register(Queue(queue.value))
           }
         }
       }

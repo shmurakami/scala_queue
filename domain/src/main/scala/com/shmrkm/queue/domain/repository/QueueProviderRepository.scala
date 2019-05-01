@@ -5,7 +5,7 @@ import com.shmrkm.queue.domain.Queue
 import scala.concurrent.Future
 
 trait QueueProviderRepository {
-  def store(queue: Queue)
+  def store(queue: Queue): Boolean
 }
 
 trait QueueConsumerRepository {
