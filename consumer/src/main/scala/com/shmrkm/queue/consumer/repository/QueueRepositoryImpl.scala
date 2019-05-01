@@ -9,10 +9,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object QueueRepositoryImpl extends QueueConsumerRepository {
   def consume(): Future[Option[Queue]] = Future {
-    Some(Queue("queue via Repository"))
+    RedisClientWrapper.get(RedisQueue) match {
+      case Some(q) => Some(Queue(q))
+      case None    => None
+    }
   }
 
-  def consume2(): Queue = {
-    ???
+  case object RedisQueue extends RedisKey {
+    def key = "test"
   }
 }

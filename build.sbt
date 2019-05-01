@@ -9,6 +9,7 @@ lazy val commonSettings = Seq(
     "org.mockito" % "mockito-core" % "2.13.0" % "test",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
+    "net.debasishg" %% "redisclient" % "3.9",
   ),
 )
 
